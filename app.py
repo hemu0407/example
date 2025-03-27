@@ -3,28 +3,32 @@ from PIL import Image
 import io
 
 def compress_image(image, target_size_kb):
-    """Compress an image to a target file size in KB."""
+    """Compress an image to an exact target file size in KB using binary search."""
     target_size = target_size_kb * 1024  # Convert KB to Bytes
     img_bytes = io.BytesIO()
     
-    # Start with an estimated quality
-    quality = 95
-    step = 5
+    # Binary search for the best quality
+    low, high = 5, 95
+    best_quality = high
+    best_bytes = None
     
-    while quality > 5:
+    while low <= high:
+        mid = (low + high) // 2
         img_bytes.seek(0)
-        image.save(img_bytes, format='JPEG', quality=quality)
+        image.save(img_bytes, format='JPEG', quality=mid)
         size = img_bytes.tell()
         
-        if size <= target_size * 1.05 and size >= target_size * 0.95:
+        if size <= target_size * 1.02 and size >= target_size * 0.98:
             return img_bytes
-        
-        if size > target_size:
-            quality -= step  # Reduce quality if file is too large
+        elif size > target_size:
+            high = mid - 1  # Reduce quality if too large
         else:
-            quality += step // 2  # Increase quality if file is too small
+            low = mid + 1   # Increase quality if too small
+        
+        best_quality = mid
+        best_bytes = img_bytes.getvalue()
     
-    return img_bytes  # Return the best achieved compression
+    return io.BytesIO(best_bytes)  # Return best achieved compression
 
 # Streamlit UI
 st.title("Image Compressor App")
