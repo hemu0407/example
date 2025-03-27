@@ -5,18 +5,24 @@ import io
 def compress_image(image, target_size_kb):
     """Compress an image to a target file size in KB."""
     target_size = target_size_kb * 1024  # Convert KB to Bytes
-    quality = 95  # Start with high quality
     img_bytes = io.BytesIO()
     
-    while quality > 10:
+    # Start with an estimated quality
+    quality = 95
+    step = 5
+    
+    while quality > 5:
         img_bytes.seek(0)
         image.save(img_bytes, format='JPEG', quality=quality)
         size = img_bytes.tell()
         
-        if size <= target_size:
+        if size <= target_size * 1.05 and size >= target_size * 0.95:
             return img_bytes
         
-        quality -= 5  # Reduce quality gradually
+        if size > target_size:
+            quality -= step  # Reduce quality if file is too large
+        else:
+            quality += step // 2  # Increase quality if file is too small
     
     return img_bytes  # Return the best achieved compression
 
